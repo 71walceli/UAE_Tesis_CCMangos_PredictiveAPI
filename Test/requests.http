@@ -1,0 +1,8 @@
+@HOST = http://192.168.67.242:8000
+
+###
+GET {{HOST}}/clima
+
+###
+GET {{HOST}}/cosechas
+
