@@ -14,14 +14,21 @@ from randomForestClassifiers import trainRandomForestRegressors, FOREST_REGRESSO
 import sarimax_utils as su
 
 
+def cleanUp():
+    global status
+    status = "cleaningUp"
+    for root, dirs, files in os.walk("/Data", topdown=False):
+        for name in files:
+            os.remove(os.path.join(root, name))
+        for name in dirs:
+            os.rmdir(os.path.join(root, name))
+
+if os.environ.get("CLEANUP"):
+    cleanUp()
+
 def LoadOrTrainModels():
     global status
     status = "loading"
-    if os.environ.get("CLEANUP"):
-        for file in REQUIRED_FILES + [VARIABLES_SELECCIONADAS_PATH, ARIMAS_PATH]:
-            if os.path.exists(file):
-                os.remove(file)
-
     if any(not os.path.exists(file) for file in REQUIRED_FILES):
         status = "loadingData"
         ETL()
@@ -145,4 +152,10 @@ async def resultados_cosechas():
     }
     return response
 
-
+@app.get("/reentrenar")
+async def reentrenar():
+    global models, predictions
+    cleanUp()
+    models = LoadOrTrainModels()
+    predictions = loadorGeneratePredictions(models)
+    return 
