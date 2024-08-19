@@ -22,6 +22,7 @@ def cleanUp():
             os.remove(os.path.join(root, name))
         for name in dirs:
             os.rmdir(os.path.join(root, name))
+    os.makedirs("/Data/etlData", exist_ok=True)
 
 if os.environ.get("CLEANUP"):
     cleanUp()
@@ -64,6 +65,8 @@ os.makedirs(RESULTADOS_DIR, exist_ok=True)
 
 def loadorGeneratePredictions(models):
     global status
+    
+    os.makedirs(RESULTADOS_DIR, exist_ok=True)
     status = "ready"
     variables_seleccionadas = pkl.loads(open(VARIABLES_SELECCIONADAS_PATH, "rb").read())
     try:
@@ -92,7 +95,7 @@ def loadorGeneratePredictions(models):
             for type in ("min value max".split(" ")):
                 df = pd.DataFrame()
                 for variable in variables_seleccionadas[variedad]:
-                    df[variable] = clima_predicciones[variable][type].resample("Y").mean()
+                    df[variable] = clima_predicciones[variable][type].resample("Y").mean(numeric_only=True)
                 _variedad[type] = df
         
         forestRegressors = models["forestRegressors"]
@@ -158,4 +161,14 @@ async def reentrenar():
     cleanUp()
     models = LoadOrTrainModels()
     predictions = loadorGeneratePredictions(models)
-    return 
+    return {}
+
+@app.get("/metricas")
+async def metricas():
+    with open(VARIABLES_SELECCIONADAS_PATH, "rb") as f:
+        variables_seleccionadas = pkl.loads(f.read())
+    response = {"results": {
+        "variables_seleccionadas": variables_seleccionadas
+    }}
+
+    return response

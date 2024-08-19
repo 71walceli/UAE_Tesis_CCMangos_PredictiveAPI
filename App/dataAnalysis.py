@@ -1,10 +1,10 @@
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from datetime import datetime
 import pickle as pkl
 import timeseries as ts
 from pmdarima.arima import auto_arima
+from pytz import UTC
 import os
 
 from etl import DATOS_CLIMA_PATH, PRODUCCIONES_PATH
@@ -115,8 +115,7 @@ def ANALISYS():
     datos_clima =  pd.read_pickle(DATOS_CLIMA_PATH)
     producciones =  pd.read_pickle(PRODUCCIONES_PATH)
 
-    x = datos_clima.resample("Y").mean()[datetime(2020,1,1):]
-    y = producciones["Cantidad"]
+    x = datos_clima.resample("Y").mean(numeric_only=True)[datetime(2020,1,1, tzinfo=UTC):]   # TODO Review this
     y_por_variedad = producciones.groupby(
         ["Variedad", producciones["Fecha"].apply(lambda f: f[:4])], 
         as_index=False
@@ -126,18 +125,11 @@ def ANALISYS():
     y_target = "Cantidad"
     corr_matrix = corr_with_predictors(x, y_por_variedad, groupby, y_target)
 
-    columna = "Tommy Atkins"
-    values = corr_matrix[columna].abs().sort_values(ascending=False)[corr_matrix[columna].abs() > 0.66]
-    variables_tommy = values.index.values
-
-    columna = "Ataulfo"
-    values = corr_matrix[columna].abs().sort_values(ascending=False)[corr_matrix[columna].abs() > 0.66]
-    variables_ataulfo = values.index.values
-
-    variables_seleccionadas = {
-        "Tommy Atkins": variables_tommy,
-        "Ataulfo": variables_ataulfo,
-    }
+    variables_seleccionadas = {}
+    for variedad in y_por_variedad[groupby].unique():
+        variables = corr_matrix[abs(corr_matrix[variedad]) > 0.66][variedad].index
+        variables_seleccionadas[variedad] = list(variables)
+    
     os.makedirs(ANALISYS_DIR, exist_ok=True)
     with open(VARIABLES_SELECCIONADAS_PATH, "wb") as f:
         f.write(pkl.dumps(variables_seleccionadas))

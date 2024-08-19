@@ -28,7 +28,7 @@ def trainSarimaxes():
 
     arimas = dict()
     for variable in variables_seleccionadas:
-        data = datos_clima[variable].resample("M").mean()
+        data = datos_clima[variable].resample("M").mean(numeric_only=True)
         autoARIMA = auto_arima(data, seasonal=True, m=12)
         autoARIMA.fit(data)
         arimas[variable] = autoARIMA

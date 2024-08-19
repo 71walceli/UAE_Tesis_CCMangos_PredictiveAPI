@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 
 
-API_BASE_URL = "http://django:8080/api"
+API_BASE_URL = os.environ["API_BASE_URL"]
 ETL_DIR = "/Data/etlData"
 PRODUCCIONES_PATH = f"{ETL_DIR}/producciones.pickle"
 DATOS_CLIMA_PATH = f"{ETL_DIR}/datos_clima.pickle"
@@ -35,7 +35,6 @@ def ETL():
         "Authorization": f"Bearer {response['access_token']}",
     }
 
-    areas = dataframe_from_api(session,"/lotes")
     producciones = dataframe_from_api(session,"/produccion")
     datos_clima = dataframe_from_api(session,"/weather/data")
 
@@ -91,22 +90,15 @@ def ETL():
         "Id_Lote": int,
     })
 
-
     datos_clima = df_change_types(datos_clima, {column: float 
         for column in variables_ambientales
     })
-    datos_clima.dtypes
-
 
     # ## Integración y unión
-    variedades = dataframe_from_api(session,"/variedades")
-    lotes = dataframe_from_api(session,"/areas")
-    producciones_variedad_id = pd.merge(producciones,lotes[["id","Variedad"]], how='left',left_on="Id_Area",right_on="id")
-    producciones_variedad = pd.merge(producciones_variedad_id,variedades[["id","Nombre"]], how='left',left_on="Variedad",right_on="id")
-    producciones_variedad["Variedad"] = producciones_variedad["Nombre"]
-    producciones_variedad.drop(["id_x","id_y","Nombre"],axis=1,inplace=True)
-    producciones = producciones_variedad
-
+    producciones["Variedad"] = producciones["Variedad"].map(
+        lambda variedad: variedad["Nombre"]
+    )
+    
     # ## Agrupamiento
     producciones["años"] = producciones["Fecha"].map(lambda fecha: fecha[:4]).astype(int)
     producciones.index = pd.MultiIndex.from_arrays(producciones[["Id_Lote", "años"]].values.T)
