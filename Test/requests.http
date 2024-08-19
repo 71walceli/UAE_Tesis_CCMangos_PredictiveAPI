@@ -6,3 +6,9 @@ GET {{HOST}}/clima
 ###
 GET {{HOST}}/cosechas
 
+###
+GET {{HOST}}/reentrenar
+
+###
+GET {{HOST}}/metricas
+
