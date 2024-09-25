@@ -1,4 +1,5 @@
 /Data
 .env
+.env.*
 
 __pycache__
